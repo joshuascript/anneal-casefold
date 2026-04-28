@@ -1,16 +1,21 @@
-## MountScript
-# Create Windows-style directories on Linux
+# MountScript
+### Create case-insensitive directories on Linux
 
-MountScript converts any folder on your machine from a case-sensitive
-directory to a case-insensitive one at a system level by using ext4 mounts.
+MountScript converts any directory on your machine from case-sensitive to case-insensitive by backing it with an ext4 loop mount formatted with the `casefold` option.
 
-This will eventually be installable on bash, but for now you can run the command
-from the local folder
+## Usage
 
-sudo ./mountscript
-sudo ./mountscript select {DIRECTORY}
-sudo ./mountscript create {DIRECTORY||none} : leave empty if select was used
-sudo ./mountscript list : lists all case insensitive mounts managed by this cli
-sudo ./mountscript remove {DIRECTORY} : safely cleans up and removes the mount point preserving folder
-sudo ./mountscript permanent {DIRECTORY} : (not implemented)
-sudo ./mountscript fix : clears ghost volumes on Nautilus
+```bash
+sudo ./mountscript <command> [directory]
+```
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `select <directory>` | Set the active directory for subsequent commands |
+| `create [directory]` | Create a casefold mount (uses selected directory if omitted) |
+| `remove [directory]` | Unmount and clean up, preserving all files (uses selected directory if omitted) |
+| `list` | List all active MountScript mounts |
+| `fix` | Clear ghost volumes from Nautilus |
+| `permanent [directory]` | *(not yet implemented)* |
