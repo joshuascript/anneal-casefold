@@ -29,8 +29,10 @@ def select(directory: str):
         return
     if state == "mountscript_mount":
         print(f"Already a MountScript casefold mount: {directory}")
+        return
     if state == "external_casefold":
         print(f"External casefold mount detected: {directory}")
+        return
     if state == "mounted":
         print(f"Directory is already mounted: {directory}")
         return
@@ -177,37 +179,37 @@ def format_image(image_path: str):
     subprocess.run(["mkfs.ext4", "-O", "casefold", "-E", "encoding=utf8,encoding_flags=strict", image_path], check=True)
 
 def mount_image(image_path: str, destination: str):
-    subprocess.run(["sudo", "mount", "-o", "loop", image_path, destination], check=True)
+    subprocess.run(["mount", "-o", "loop", image_path, destination], check=True)
 
 def unmount_image(destination: str):
     # -l (lazy) defers the unmount until the filesystem is no longer busy,
     # preventing failures if a file manager has the directory open.
-    subprocess.run(["sudo", "umount", "-l", destination], check=True)
+    subprocess.run(["umount", "-l", destination], check=True)
 
 # Detaches the loop device backing the given image file.
 def detach_loop(image_path: str):
     result = subprocess.run(
-        ["sudo", "losetup", "--output", "NAME", "--noheadings", "--associated", image_path],
+        ["losetup", "--output", "NAME", "--noheadings", "--associated", image_path],
         capture_output=True,
         text=True
     )
     loop_device = result.stdout.strip()
     if loop_device:
-        subprocess.run(["sudo", "losetup", "-d", loop_device], check=True)
+        subprocess.run(["losetup", "-d", loop_device], check=True)
 
 def remove_image(image_path: str):
-    subprocess.run(["sudo", "rm", image_path], check=True)
+    subprocess.run(["rm", image_path], check=True)
 
 # Transfers ownership of the mounted directory to the invoking user.
 # The mount operation runs as root, so without this the directory is root-owned.
 def set_ownership(destination: str):
-    user = os.getlogin()
-    subprocess.run(["sudo", "chown", f"{user}:{user}", destination], check=True)
+    user = os.environ["SUDO_USER"]
+    subprocess.run(["chown", f"{user}:{user}", destination], check=True)
 
 def set_casefold(destination: str):
-    subprocess.run(["sudo", "chattr", "+F", destination], check=True)
+    subprocess.run(["chattr", "+F", destination], check=True)
 
 # Uses debugfs to remove lost+found directly from the image before it is
 # mounted — deleting it after mounting would leave it on the ext4 filesystem.
 def remove_lost_found(image_path: str):
-    subprocess.run(["sudo", "debugfs", "-w", image_path, "-R", "rmdir lost+found"], check=True)
+    subprocess.run(["debugfs", "-w", image_path, "-R", "rmdir lost+found"], check=True)

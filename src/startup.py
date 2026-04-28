@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from packaging.version import Version
 from src.info_states import VersionInfo, SessionState
