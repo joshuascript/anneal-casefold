@@ -1,8 +1,8 @@
 import subprocess
 import json
 from typing import List
-from src.info_states import Volume
-from src.paths import Paths
+from info_states import Volume
+from paths import Paths
 
 class VolumeCache:
     def __init__(self):

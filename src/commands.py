@@ -1,9 +1,9 @@
 import os
 import subprocess
 import tempfile
-from src.paths import Paths
-from src.info_states import SessionState
-from src import startup
+from paths import Paths
+from info_states import SessionState
+import startup
 
 # Returns a string describing the current state of a directory,
 # checked in priority order so callers get the most specific classification.
@@ -213,3 +213,12 @@ def set_casefold(destination: str):
 # mounted — deleting it after mounting would leave it on the ext4 filesystem.
 def remove_lost_found(image_path: str):
     subprocess.run(["debugfs", "-w", image_path, "-R", "rmdir lost+found"], check=True)
+
+REGISTRY = {
+    "select":    lambda args: select(args.directory),
+    "create":    lambda args: create(args.directory),
+    "remove":    lambda args: remove(args.directory),
+    "list":      lambda args: list_mounts(),
+    "fix":       lambda args: fix(),
+    "permanent": lambda args: None,
+}

@@ -1,7 +1,7 @@
 import os
 from typing import List
-from src.info_states import MountImage
-from src.paths import Paths
+from info_states import MountImage
+from paths import Paths
 
 class ImageCache:
     def __init__(self):

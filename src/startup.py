@@ -2,10 +2,10 @@ import os
 import re
 import subprocess
 from packaging.version import Version
-from src.info_states import VersionInfo, SessionState
-from src.volume_cache import VolumeCache
-from src.image_cache import ImageCache
-from src.paths import Paths
+from info_states import VersionInfo, SessionState
+from volume_cache import VolumeCache
+from image_cache import ImageCache
+from paths import Paths
 
 volume_cache: VolumeCache = None
 image_cache: ImageCache = None

@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from src.paths import Paths
+from paths import Paths
 
 @dataclass
 class Volume:
