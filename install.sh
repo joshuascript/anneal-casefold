@@ -4,6 +4,7 @@ set -e
 INSTALL_DIR="/opt/anneal"
 BIN_PATH="/usr/local/bin/anneal"
 DATA_DIR="/var/lib/anneal"
+UDEV_RULE="/etc/udev/rules.d/99-anneal.rules"
 
 if [[ "$EUID" -ne 0 ]]; then
     exec sudo "$0" "$@"
@@ -13,6 +14,8 @@ uninstall() {
     echo "Uninstalling anneal..."
     rm -f "$BIN_PATH"
     rm -rf "$INSTALL_DIR"
+    rm -f "$UDEV_RULE"
+    udevadm control --reload-rules && udevadm trigger --subsystem-match=block
     echo "Removed $BIN_PATH and $INSTALL_DIR"
     echo "Data directory $DATA_DIR was left intact."
 }
@@ -53,5 +56,9 @@ chmod +x "$BIN_PATH"
 
 # Create data directory
 mkdir -p "$DATA_DIR"
+
+# Install udev rule to hide anneal loop devices from udisks2
+echo 'SUBSYSTEM=="block", KERNEL=="loop[0-9]*", ATTR{loop/backing_file}=="/var/lib/anneal/*", ENV{UDISKS_IGNORE}="1"' > "$UDEV_RULE"
+udevadm control --reload-rules && udevadm trigger --subsystem-match=block
 
 echo "Done. Run: anneal <command>"
