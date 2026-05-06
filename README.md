@@ -13,8 +13,8 @@ stay put. Your apps stop caring about case.
   image, and restores them automatically. Nothing is lost.
 - **Conflict-aware** — before mounting, anneal scans for case-colliding files
   and lets you resolve them interactively.
-- **Persistent** — one `anneal permanent` command writes an fstab entry so the
-  mount survives reboots.
+- **Persistent** — mounts are written to `/etc/fstab` automatically on creation
+  and survive reboots without any extra steps.
 
 ## How it works
 
@@ -41,32 +41,28 @@ To uninstall:
 ./install.sh --uninstall
 ```
 
-> Uninstalling removes `/opt/anneal` and `/usr/local/bin/anneal`. Your images
-> and data in `/var/lib/anneal/` are left intact.
+> Uninstalling removes `/opt/anneal`, `/usr/local/bin/anneal`, and the udev rule.
+> Your images and data in `/var/lib/anneal/` are left intact.
 
 ## Commands
 
 | Command | Description |
 |---|---|
 | `select <directory>` | Set the active directory for subsequent commands |
-| `create [directory]` | Create a casefold mount (uses selected if omitted) |
+| `create [directory]` | Create a casefold mount and add it to `/etc/fstab` |
 | `remove [directory]` | Unmount and remove the image, preserving all files |
-| `list` | Show all anneal mounts with status and fstab info |
-| `permanent [directory]` | Add the mount to `/etc/fstab` so it persists across reboots |
-| `permanent [directory] --remove` | Remove the mount from `/etc/fstab` |
+| `list` | Show all anneal mounts with status |
 | `fix` | Clear ghost volumes from Nautilus |
 
 ## Example
 
 ```bash
-anneal create ~/Games/Skyrim
-anneal permanent ~/Games/Skyrim
+anneal create ~/Documents/sbox-public
 ```
 
 Or select first and reuse:
 
 ```bash
-anneal select ~/Games/Skyrim
+anneal select ~/Documents/sbox-public
 anneal create
-anneal permanent
 ```
