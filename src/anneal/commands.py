@@ -1,4 +1,6 @@
+import grp
 import os
+import pwd
 import subprocess
 import tempfile
 from .paths import Paths
@@ -221,7 +223,9 @@ def remove_image(image_path: str):
 # The mount operation runs as root, so without this the directory is root-owned.
 def set_ownership(destination: str):
     user = os.environ["SUDO_USER"]
-    subprocess.run(["chown", f"{user}:{user}", destination], check=True)
+    gid = pwd.getpwnam(user).pw_gid
+    group = grp.getgrgid(gid).gr_name
+    subprocess.run(["chown", f"{user}:{group}", destination], check=True)
 
 def set_casefold(destination: str):
     subprocess.run(["chattr", "+F", destination], check=True)
