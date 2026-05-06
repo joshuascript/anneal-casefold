@@ -50,10 +50,3 @@ def _cross_reference():
         volume = volume_cache.get_by_source(image.path)
         if volume:
             image.mount_point = volume.directory
-        expected_dir = next(
-            (d for d in Session.permanent_directories
-             if os.path.join(Paths.IMAGES_DIR, os.path.basename(d) + ".img") == image.path),
-            None
-        )
-        if expected_dir:
-            image.permanent = True

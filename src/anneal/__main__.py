@@ -1,6 +1,7 @@
 import os
 from . import context, cli
 from .models import VersionInfo
+from . import commands
 
 def main():
     if os.geteuid() != 0:
@@ -8,6 +9,7 @@ def main():
         return
 
     context.initialize()
+    commands.migrate_legacy_images()
 
     parser = cli.build_parser()
     args = parser.parse_args()

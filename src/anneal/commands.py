@@ -1,14 +1,47 @@
 import grp
+import hashlib
 import os
 import pwd
+import re
 import subprocess
 import tempfile
 from .paths import Paths
 from .models import Session, DirectoryState
 from . import context, prepare
 
+_HASH_SUFFIX = re.compile(r'.+-[0-9a-f]{6}\.img$')
+
 def image_path_for(target: str) -> str:
-    return os.path.join(Paths.IMAGES_DIR, os.path.basename(target) + ".img")
+    suffix = hashlib.sha256(target.encode()).hexdigest()[:6]
+    return os.path.join(Paths.IMAGES_DIR, f"{os.path.basename(target)}-{suffix}.img")
+
+def migrate_legacy_images():
+    if not os.path.isdir(Paths.IMAGES_DIR):
+        return
+    for filename in os.listdir(Paths.IMAGES_DIR):
+        if not filename.endswith(".img") or _HASH_SUFFIX.match(filename):
+            continue
+        old_path = os.path.join(Paths.IMAGES_DIR, filename)
+        mount_point = _fstab_mount_for(old_path)
+        if not mount_point:
+            continue
+        new_path = image_path_for(mount_point)
+        if old_path == new_path:
+            continue
+        os.rename(old_path, new_path)
+        with open("/etc/fstab", "r") as f:
+            content = f.read()
+        with open("/etc/fstab", "w") as f:
+            f.write(content.replace(old_path, new_path))
+        print(f"Migrated: {filename} → {os.path.basename(new_path)}")
+
+def _fstab_mount_for(image_path: str) -> str | None:
+    with open("/etc/fstab", "r") as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] == image_path:
+                return parts[1]
+    return None
 
 def resolve_target(directory: str | None, cmd: str) -> str | None:
     target = directory or Session.selected_directory
@@ -104,6 +137,9 @@ def create(directory: str = None):
         print("Setting ownership...")
         set_ownership(target)
 
+        print("Adding to fstab...")
+        add_fstab_entry(image_path, target)
+
         if temp_dir:
             print("Restoring files...")
             subprocess.run(["cp", "-a", temp_dir + "/.", target + "/"], check=True)
@@ -122,7 +158,7 @@ def list_images():
         print("No anneal images found")
         return
 
-    headers = ["DIRECTORY", "IMAGE", "SIZE", "LOOP", "STATUS", "PERM"]
+    headers = ["DIRECTORY", "IMAGE", "SIZE", "LOOP", "STATUS"]
     rows = []
     for image in images:
         volume = context.volume_cache.get_by_source(image.path)
@@ -131,8 +167,7 @@ def list_images():
         size = f"{image.size_gb}G"
         loop = volume.loop_device if volume else "-"
         status = "mounted" if volume else "not mounted"
-        permanent = "x" if image.permanent else "-"
-        rows.append([directory, img_name, size, loop, status, permanent])
+        rows.append([directory, img_name, size, loop, status])
 
     col_widths = [len(h) for h in headers]
     for row in rows:
@@ -163,6 +198,9 @@ def remove(directory: str = None):
     subprocess.run(["cp", "-a", target + "/.", temp_dir + "/"], check=True)
 
     try:
+        print("Removing from fstab...")
+        remove_fstab_entry(image_path)
+
         print("Unmounting image...")
         unmount_image(target)
 
@@ -235,46 +273,15 @@ def set_casefold(destination: str):
 def remove_lost_found(image_path: str):
     subprocess.run(["debugfs", "-w", image_path, "-R", "rmdir lost+found"], check=True)
 
-def permanent(directory: str = None, remove: bool = False):
-    target = resolve_target(directory, "permanent")
-    if not target:
-        return
-
-    image_path = image_path_for(target)
-
-    if remove:
-        if target not in Session.permanent_directories:
-            print(f"Not permanent: {target}")
-            return
-        with open("/etc/fstab", "r") as f:
-            lines = f.readlines()
-        with open("/etc/fstab", "w") as f:
-            f.writelines(l for l in lines if image_path not in l)
-        Session.permanent_directories.remove(target)
-        Session.save()
-        print(f"Done — {target} will no longer mount at boot")
-        return
-
-    state = get_directory_state(target)
-    if state != DirectoryState.ANNEAL:
-        print(f"No anneal mount found at: {target}")
-        return
-
-    if target in Session.permanent_directories:
-        print(f"Already permanent: {target}")
-        return
-
+def add_fstab_entry(image_path: str, target: str):
     with open("/etc/fstab", "r") as f:
         fstab = f.read()
-    if image_path in fstab:
-        print(f"Already in /etc/fstab: {image_path}")
-        Session.permanent_directories.append(target)
-        Session.save()
-        return
+    if image_path not in fstab:
+        with open("/etc/fstab", "a") as f:
+            f.write(f"{image_path}\t{target}\text4\tloop\t0\t0\n")
 
-    with open("/etc/fstab", "a") as f:
-        f.write(f"{image_path}\t{target}\text4\tloop\t0\t0\n")
-
-    Session.permanent_directories.append(target)
-    Session.save()
-    print(f"Done — {target} will mount automatically at boot")
+def remove_fstab_entry(image_path: str):
+    with open("/etc/fstab", "r") as f:
+        lines = f.readlines()
+    with open("/etc/fstab", "w") as f:
+        f.writelines(l for l in lines if image_path not in l)

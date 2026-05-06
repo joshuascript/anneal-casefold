@@ -10,7 +10,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(
         dest="command",
-        metavar="{select, create, remove, list, fix, permanent}",
+        metavar="{select, create, remove, list, fix}",
     )
 
     select_parser = subparsers.add_parser("select", help="Select a directory")
@@ -30,10 +30,5 @@ def build_parser() -> argparse.ArgumentParser:
 
     fix_parser = subparsers.add_parser("fix", help="Clear ghost volumes from Nautilus")
     fix_parser.set_defaults(func=lambda args: commands.fix())
-
-    permanent_parser = subparsers.add_parser("permanent", help="Make the casefold mount permanent (use --remove to undo)")
-    permanent_parser.add_argument("directory", nargs="?", help="Path to the directory (optional if already selected)")
-    permanent_parser.add_argument("--remove", action="store_true", help="Remove the mount from fstab")
-    permanent_parser.set_defaults(func=lambda args: commands.permanent(args.directory, args.remove))
 
     return parser

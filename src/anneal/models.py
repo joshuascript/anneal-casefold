@@ -25,7 +25,6 @@ class DiskImage:
     path: str
     size_gb: int
     mount_point: str
-    permanent: bool = False
 
 class VersionInfo:
     version: str = ""
@@ -33,14 +32,10 @@ class VersionInfo:
 
 class Session:
     selected_directory: str = ""
-    permanent_directories: list = []
 
     @staticmethod
     def save():
-        data = {
-            "selected": Session.selected_directory,
-            "permanent": Session.permanent_directories,
-        }
+        data = {"selected": Session.selected_directory}
         with open(Paths.SESSION_FILE, "w") as f:
             json.dump(data, f)
 
@@ -53,16 +48,12 @@ class Session:
         try:
             data = json.loads(content)
             Session.selected_directory = data.get("selected", "")
-            Session.permanent_directories = data.get("permanent", [])
         except (json.JSONDecodeError, AttributeError):
             # backward compat: old format was a bare path
             Session.selected_directory = content
-            Session.permanent_directories = []
 
     @staticmethod
     def clear():
         Session.selected_directory = ""
-        if Session.permanent_directories:
-            Session.save()
-        elif os.path.exists(Paths.SESSION_FILE):
+        if os.path.exists(Paths.SESSION_FILE):
             os.remove(Paths.SESSION_FILE)
