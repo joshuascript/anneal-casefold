@@ -190,6 +190,10 @@ def remove(directory: str = None):
         return
 
     image_path = image_path_for(target)
+    if not os.path.exists(image_path):
+        legacy_path = os.path.join(Paths.IMAGES_DIR, os.path.basename(target) + ".img")
+        if os.path.exists(legacy_path):
+            image_path = legacy_path
 
     # Stash files before unmounting — once the mount is gone the directory
     # reverts to its empty underlying state and the image is deleted.
